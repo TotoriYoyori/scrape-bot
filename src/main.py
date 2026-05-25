@@ -7,7 +7,7 @@ bot = ScrapeBot(
 )
 
 routine = AudibleRoutine(
-    target_category="Home & Garden",
+    target_category="Money & Finance",
     max_records=20,
 )
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from src.scraper.bs4 import BeautifulSoupModule, create_html_parser
+from src.scraper.bs4 import BeautifulSoupModule
 from src.scraper.logger import LoggerModule
 from src.scraper.primitives import ScrapeBotRoutine
 from src.scraper.selenium import SeleniumModule
@@ -34,7 +34,7 @@ class ScrapeBot:
         # ===== Module Installation Slots
         self.logger: LoggerModule = logger or LoggerModule()
         self.browser: SeleniumModule = browser or SeleniumModule()
-        self.parser: BeautifulSoupModule = parser or create_html_parser()
+        self.parser: BeautifulSoupModule = parser or BeautifulSoupModule()
         self.writer: CsvWriterModule = writer or create_csv_writer()
         self.timing: TimingModule = timing or TimingModule()
 

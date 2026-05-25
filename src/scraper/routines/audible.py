@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import re
-
-from bs4 import BeautifulSoup, Tag
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 
@@ -10,66 +7,6 @@ from src.scraper.bot import ScrapeBot
 from src.scraper.primitives import ScrapeBotRoutine
 from src.scraper.routines.schema import AudibleSelector, BookRecord
 from src.scraper.routines.settings import routine_settings
-
-
-class AudibleBookParser:
-    """Audible-specific page parser."""
-
-    def parse_books(
-        self,
-        soup: BeautifulSoup,
-        *,
-        category: str,
-        subcategory: str,
-    ) -> list[BookRecord]:
-        cards = soup.select(".productListItem")
-        if not cards:
-            cards = soup.select(".bc-list-item")
-
-        records: list[BookRecord] = []
-        for card in cards:
-            record = self.parse_card(card, category=category, subcategory=subcategory)
-            if record.name:
-                records.append(record)
-
-        return records
-
-    def parse_card(self, card: Tag, *, category: str, subcategory: str) -> BookRecord:
-        return BookRecord(
-            name=self._text(card, "h3"),
-            author=self._label_text(card, ".authorLabel", "By:"),
-            narrator=self._label_text(card, ".narratorLabel", "Narrated by:"),
-            runtime=self._label_text(card, ".runtimeLabel", "Length:"),
-            release_date=self._label_text(card, ".releaseDateLabel", "Release date:"),
-            language=self._label_text(card, ".languageLabel", "Language:"),
-            stars=self._label_text(card, ".ratingsLabel", "Ratings:"),
-            price=self._price(card),
-            category=category,
-            subcategory=subcategory,
-        )
-
-    @staticmethod
-    def _text(card: Tag, selector: str) -> str | None:
-        element = card.select_one(selector)
-        if element is None:
-            return None
-
-        return element.get_text(" ", strip=True)
-
-    def _label_text(self, card: Tag, selector: str, label: str) -> str | None:
-        text = self._text(card, selector)
-        if text is None:
-            return None
-
-        return text.replace(label, "").strip()
-
-    @staticmethod
-    def _price(card: Tag) -> str:
-        buy_box = card.find(id="adbl-buy-box")
-        text = buy_box.get_text(" ", strip=True) if buy_box else card.get_text(" ", strip=True)
-        matches = re.findall(r"(\d+,?\d+\.\d+)", text)
-
-        return matches[0] if matches else "Free"
 
 
 class AudibleRoutine(ScrapeBotRoutine):
@@ -85,14 +22,12 @@ class AudibleRoutine(ScrapeBotRoutine):
         base_url: str = BASE_URL,
         target_category: str | None = None,
         max_records: int | None = None,
-        parser: AudibleBookParser | None = None,
         selectors: type[AudibleSelector] = AudibleSelector,
     ) -> None:
         self.base_url = base_url
         self.target_category = target_category
         self.max_records = max_records
         self.records_written = 0
-        self.parser = parser or AudibleBookParser()
         self.selectors = selectors
 
     def execute(self, bot: ScrapeBot) -> None:
@@ -102,13 +37,19 @@ class AudibleRoutine(ScrapeBotRoutine):
 
         categories = self._get_categories(bot)
         category_names = [category.text for category in categories]
+        self._validate_target_category(category_names)
         bot.logger.info("Targeting %d categories.", len(category_names))
 
         for index, category_name in enumerate(category_names):
             if self.target_category and category_name != self.target_category:
                 continue
 
-            bot.logger.info("Scraping category [%d/%d]: %s", index + 1, len(category_names), category_name)
+            bot.logger.info(
+                "Scraping category [%d/%d]: %s",
+                index + 1,
+                len(category_names),
+                category_name,
+            )
 
             try:
                 self._apply_options(bot)
@@ -119,10 +60,14 @@ class AudibleRoutine(ScrapeBotRoutine):
                     return
 
                 if self.target_category:
-                    bot.logger.info("Finished target category '%s'.", self.target_category)
+                    bot.logger.info(
+                        "Finished target category '%s'.", self.target_category
+                    )
                     return
             except (NoSuchElementException, TimeoutException) as exc:
-                bot.logger.error("Failed to process category '%s': %s", category_name, exc)
+                bot.logger.error(
+                    "Failed to process category '%s': %s", category_name, exc
+                )
             finally:
                 self._go_back_to_all_categories(bot)
 
@@ -142,6 +87,17 @@ class AudibleRoutine(ScrapeBotRoutine):
 
         bot.logger.info("Cookie consent banner found.")
         bot.browser.safe_click(accept_button)
+
+    def _validate_target_category(self, category_names: list[str]) -> None:
+        if self.target_category is None:
+            return
+        if self.target_category in category_names:
+            return
+
+        raise ValueError(
+            f"Target category '{self.target_category}' was not found. "
+            f"Available categories: {category_names}"
+        )
 
     def _get_categories(self, bot: ScrapeBot):
         bot.browser.require_presence(self.selectors.categories)
@@ -169,7 +125,9 @@ class AudibleRoutine(ScrapeBotRoutine):
         bot.browser.require_presence(self.selectors.audiobook_filter)
         audiobook_filter = bot.browser.find(self.selectors.audiobook_filter)
         if not audiobook_filter.is_selected():
-            audiobook_link = bot.browser.require_clickable(self.selectors.audiobook_link)
+            audiobook_link = bot.browser.require_clickable(
+                self.selectors.audiobook_link
+            )
             bot.browser.safe_click(audiobook_link)
 
     def _scrape_subcategories(self, bot: ScrapeBot, category_name: str) -> bool:
@@ -178,33 +136,49 @@ class AudibleRoutine(ScrapeBotRoutine):
 
         for index in range(total):
             if not self._should_scrape(category_name, index):
-                bot.logger.debug("  Skipping subcategory index %d in '%s'.", index, category_name)
+                bot.logger.debug(
+                    "  Skipping subcategory index %d in '%s'.", index, category_name
+                )
                 continue
 
             try:
                 subcategories = self._get_subcategories(bot)
                 if index >= len(subcategories):
-                    bot.logger.warning("  Subcategory list changed; stopping early at index %d.", index)
+                    bot.logger.warning(
+                        "  Subcategory list changed; stopping early at index %d.", index
+                    )
                     break
 
                 subcategory = subcategories[index]
                 subcategory_name = subcategory.text
                 bot.browser.safe_click(subcategory)
 
-                keep_going = self._scrape_all_pages(bot, category_name, subcategory_name)
+                keep_going = self._scrape_all_pages(
+                    bot, category_name, subcategory_name
+                )
                 if not keep_going:
                     return False
             except (NoSuchElementException, TimeoutException) as exc:
-                bot.logger.error("  Failed on subcategory %d of '%s': %s", index, category_name, exc)
+                bot.logger.error(
+                    "  Failed on subcategory %d of '%s': %s", index, category_name, exc
+                )
             except IndexError:
-                bot.logger.error("Index error while scraping subcategories.", exc_info=True)
+                bot.logger.error(
+                    "Index error while scraping subcategories.", exc_info=True
+                )
             finally:
                 self._go_back_to_subcategories(bot)
 
         return True
 
-    def _scrape_all_pages(self, bot: ScrapeBot, category_name: str, subcategory_name: str) -> bool:
-        bot.logger.info("  Starting scrape on category '%s' / subcategory '%s'.", category_name, subcategory_name)
+    def _scrape_all_pages(
+        self, bot: ScrapeBot, category_name: str, subcategory_name: str
+    ) -> bool:
+        bot.logger.info(
+            "  Starting scrape on category '%s' / subcategory '%s'.",
+            category_name,
+            subcategory_name,
+        )
         total_pages = self._get_pages(bot)
 
         for page_num in range(1, total_pages + 1):
@@ -214,16 +188,20 @@ class AudibleRoutine(ScrapeBotRoutine):
                 bot.logger.warning("    Page %d failed to load; skipping.", page_num)
                 continue
 
-            soup = bot.parser.soup(html)
-            books = self.parser.parse_books(
-                soup,
-                category=category_name,
-                subcategory=subcategory_name,
+            books = bot.parser.parse_records(
+                html,
+                self.selectors.books,
+                context={
+                    "category": category_name,
+                    "subcategory": subcategory_name,
+                },
             )
 
             records_to_write = self._limit_records(books)
             if records_to_write:
-                bot.writer.write(records_to_write, fieldnames=routine_settings.CSV_FIELDNAMES)
+                bot.writer.write(
+                    records_to_write, fieldnames=routine_settings.CSV_FIELDNAMES
+                )
                 self.records_written += len(records_to_write)
                 bot.logger.info(
                     "    Written %d / %s books so far.",
@@ -249,13 +227,19 @@ class AudibleRoutine(ScrapeBotRoutine):
         try:
             bot.browser.require_presence(self.selectors.page_numbers)
         except TimeoutException as exc:
-            bot.logger.warning("  Could not determine page count: %s. Scraping one page.", exc)
+            bot.logger.warning(
+                "  Could not determine page count: %s. Scraping one page.", exc
+            )
             return 1
 
         page_elements = bot.browser.find_all(self.selectors.page_numbers)
-        page_numbers = [element.text for element in page_elements if element.text.strip().isdigit()]
+        page_numbers = [
+            element.text for element in page_elements if element.text.strip().isdigit()
+        ]
         if not page_numbers:
-            bot.logger.warning("  Could not determine page count: no numeric page elements found. Scraping one page.")
+            bot.logger.warning(
+                "  Could not determine page count: no numeric page elements found. Scraping one page."
+            )
             return 1
         return int(page_numbers[-1])
 
