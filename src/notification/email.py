@@ -4,6 +4,8 @@ from email.message import EmailMessage
 import mimetypes
 from pathlib import Path
 
+from src.notification.settings import notification_settings
+
 
 def is_workday(date: dt.date | None = None) -> bool:
     """Return True if it's a workday (Tue–Sat in your logic)."""
@@ -60,7 +62,7 @@ def email_notify(file_path: str) -> None:
         file_path=file_path,
         subject=f"Daily Report - {today}",
         body="Hi Boss,\n\nPlease find the attached report.\n",
-        sender_email="lilmissmj.0606@gmail.com",
-        receiver_email="stan.mng@gmail.com",
-        password="fwkm pglp ggjv olcn",
+        sender_email=notification_settings.SENDER_EMAIL,
+        receiver_email=notification_settings.RECEIVER_EMAIL,
+        password=notification_settings.PASSWORD,
     )

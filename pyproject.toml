@@ -6,20 +6,25 @@ readme = "README.md"
 requires-python = ">=3.11"
 
 dependencies = [
+    # ===== Web scraping dependencies
     "beautifulsoup4==4.14.3",
+    "selenium==4.41.0",
+    # ===== Data analysis dependencies
     "matplotlib==3.10.8",
     "missingno==0.5.2",
     "numpy>=2.4.6",
     "pandas==3.0.1",
+    "seaborn==0.13.2",
+    "thefuzz==0.22.1",
+    # ===== Workflow orchestration dependencies
     "prefect==3.6.23",
+    # ===== Settings and validation dependencies
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.1",
     "python-dotenv>=1.2.2",
-    "seaborn==0.13.2",
-    "selenium==4.41.0",
+    # ===== Database and loading dependencies
     "snowflake-connector-python==4.4.0",
     "sqlalchemy==2.0.48",
-    "thefuzz==0.22.1",
 ]
 
 [dependency-groups]

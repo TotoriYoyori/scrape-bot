@@ -1,3 +1,4 @@
-from src.notification.email import is_workday, email_notify
+from src.notification.email import email_notify, is_workday
+from src.notification.settings import NotificationSettings
 
-__all__ = ['is_workday', 'email_notify']
+__all__ = ["email_notify", "is_workday", "NotificationSettings"]
