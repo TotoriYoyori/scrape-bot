@@ -3,13 +3,14 @@ import os
 from pathlib import Path
 
 import pandas as pd
-from prefect import task, flow, get_run_logger
+from prefect import flow, get_run_logger, task
 
-from extract import extract_audible_csv, scrape_site
-from load import upload_to_snowflake_stage
-from notification import is_workday, email_notify
 from recipes import audible_clean_steps
-from transform import transform_data
+from src.extract import extract_audible_csv
+from src.load import upload_to_snowflake_stage
+from src.main import scrape_site
+from src.notification import email_notify, is_workday
+from src.transform import transform_data
 
 
 @task
@@ -83,9 +84,7 @@ def audible_etl(category_name: str) -> None:
         )
         raise TimeoutError
 
-    logger.info(
-        f"/~/ Beginning data cleaning, saving to\n{clean_file_path} ..."
-    )
+    logger.info(f"/~/ Beginning data cleaning, saving to\n{clean_file_path} ...")
     raw_df = read_recently_export_csv(dirty_file_path)
     clean_df = clean_audible_df(raw_df)
     export_audible_df(clean_df, clean_file_path)
@@ -100,7 +99,3 @@ def audible_etl(category_name: str) -> None:
     logger.info(f"Sent {clean_file_path} to Snowflake stage")
 
     email_the_boss(clean_file_path)
-
-
-if __name__ == "__main__":
-    audible_etl("Business & Careers")

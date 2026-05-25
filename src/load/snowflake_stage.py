@@ -1,5 +1,5 @@
 import snowflake.connector
-from config import Config
+from src.load.settings import snowflake_settings
 
 
 def upload_to_snowflake_stage(file_path: str) -> None:
@@ -11,11 +11,11 @@ def upload_to_snowflake_stage(file_path: str) -> None:
             )
 
 
-def _fetch_login_credentials(config: Config) -> dict[str, str]:
+def _fetch_login_credentials() -> dict[str, str]:
     return {
-        'user': config.SNOWFLAKE_USERNAME,
-        'password': config.SNOWFLAKE_PASSWORD,
-        'account': config.SNOWFLAKE_ACCOUNT,
+        'user': snowflake_settings.SNOWFLAKE_USERNAME,
+        'password': snowflake_settings.SNOWFLAKE_PASSWORD,
+        'account': snowflake_settings.SNOWFLAKE_ACCOUNT,
         'warehouse': 'COMPUTE_WH',
         'database': 'AUDIBLE_CATALOG',
         'schema': 'L00_STG'
