@@ -30,6 +30,7 @@ class AudibleRoutineSettings(ScrapeBotModuleSetting):
         }
     )
     PAGE_RETRY_DELAY: int = 2
+    PAGE_LOAD_SENTINEL: str = "adbl-impression-container"
 
     model_config = SettingsConfigDict(
         env_prefix="AUDIBLE_ROUTINE_",

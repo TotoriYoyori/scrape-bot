@@ -33,7 +33,10 @@ class NamedANSIColor(BaseModel):
     ansi: str = Field(description="ANSI foreground color or reset escape sequence.")
     color_name: str = Field(min_length=1, description="Human-readable color name.")
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(
+        extra="ignore",
+        frozen=True
+    )
 
     @field_validator("ansi")
     @classmethod
@@ -82,7 +85,10 @@ class LoggerPalette(BaseModel):
     critical: NamedANSIColor
     reset: NamedANSIColor = NamedANSIColor(ansi="\x1b[0m", color_name="reset")
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(
+        extra="ignore",
+        frozen=True
+    )
 
     def list_colors(self) -> None:
         print(f"{'Name':<12} {'Color':<12} {'Raw Value':<20} Preview")

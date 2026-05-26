@@ -95,10 +95,10 @@ class BeautifulSoupModule(ScrapeBotModule):
         if field.regex_pattern:
             matches = re.findall(field.regex_pattern, text)
             return matches[0] if matches else field.default
-        if field.remove_prefix and text is not None:
-            text = text.replace(field.remove_prefix, "").strip()
-        if field.remove_suffix and text is not None:
-            text = text.removesuffix(field.remove_suffix).strip()
+        if field.trim_prefix and text is not None:
+            text = text.replace(field.trim_prefix, "").strip()
+        if field.trim_suffix and text is not None:
+            text = text.removesuffix(field.trim_suffix).strip()
 
         return text or field.default
 

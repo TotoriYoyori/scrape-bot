@@ -1,11 +1,11 @@
-from __future__ import annotations
-
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 
 from src.scraper.bot import ScrapeBot
 from src.scraper.primitives import ScrapeBotRoutine
-from src.scraper.routines.schema import AudibleSelector, BookRecord
+
+from src.scraper.routines import locators
+from src.scraper.routines.schema import BS4_BOOK, BookRecord
 from src.scraper.routines.settings import routine_settings
 
 
@@ -19,19 +19,15 @@ class AudibleRoutine(ScrapeBotRoutine):
     def __init__(
         self,
         *,
-        base_url: str = BASE_URL,
         target_category: str | None = None,
         max_records: int | None = None,
-        selectors: type[AudibleSelector] = AudibleSelector,
     ) -> None:
-        self.base_url = base_url
         self.target_category = target_category
         self.max_records = max_records
         self.records_written = 0
-        self.selectors = selectors
 
     def execute(self, bot: ScrapeBot) -> None:
-        bot.browser.open(self.base_url)
+        bot.browser.open(self.BASE_URL)
         self._follow_redirect_if_present(bot)
         self._accept_cookie_banner_if_present(bot)
 
@@ -72,7 +68,7 @@ class AudibleRoutine(ScrapeBotRoutine):
                 self._go_back_to_all_categories(bot)
 
     def _follow_redirect_if_present(self, bot: ScrapeBot) -> None:
-        redirect = bot.browser.locate(self.selectors.redirect_link)
+        redirect = bot.browser.locate(locators.REDIRECT_LINK)
         if redirect is None:
             return
 
@@ -81,7 +77,7 @@ class AudibleRoutine(ScrapeBotRoutine):
         bot.browser.redirect_click(redirect)
 
     def _accept_cookie_banner_if_present(self, bot: ScrapeBot) -> None:
-        accept_button = bot.browser.locate(self.selectors.cookie_accept_button)
+        accept_button = bot.browser.locate(locators.COOKIE_ACCEPT_BUTTON)
         if accept_button is None:
             return
 
@@ -100,33 +96,33 @@ class AudibleRoutine(ScrapeBotRoutine):
         )
 
     def _get_categories(self, bot: ScrapeBot):
-        bot.browser.require_presence(self.selectors.categories)
-        categories = bot.browser.find_all(self.selectors.categories)
+        bot.browser.require_presence(locators.CATEGORIES)
+        categories = bot.browser.find_all(locators.CATEGORIES)
 
         return categories[:-2]
 
     def _get_subcategories(self, bot: ScrapeBot):
-        bot.browser.require_presence(self.selectors.subcategory_container)
-        container = bot.browser.find(self.selectors.subcategory_container)
+        bot.browser.require_presence(locators.SUBCATEGORY_CONTAINER)
+        container = bot.browser.find(locators.SUBCATEGORY_CONTAINER)
         return container.find_elements(By.CLASS_NAME, "refinementFormLink")
 
     def _go_back_to_subcategories(self, bot: ScrapeBot) -> None:
-        bot.browser.require_presence(self.selectors.breadcrumb)
-        breadcrumb = bot.browser.find(self.selectors.breadcrumb)
+        bot.browser.require_presence(locators.BREADCRUMB)
+        breadcrumb = bot.browser.find(locators.BREADCRUMB)
         items = breadcrumb.find_elements(By.TAG_NAME, "li")
         if len(items) > 1:
             bot.browser.safe_click(items[1])
 
     def _go_back_to_all_categories(self, bot: ScrapeBot) -> None:
-        all_categories = bot.browser.require_clickable(self.selectors.all_categories)
+        all_categories = bot.browser.require_clickable(locators.ALL_CATEGORIES)
         bot.browser.safe_click(all_categories)
 
     def _apply_options(self, bot: ScrapeBot) -> None:
-        bot.browser.require_presence(self.selectors.audiobook_filter)
-        audiobook_filter = bot.browser.find(self.selectors.audiobook_filter)
+        bot.browser.require_presence(locators.AUDIOBOOK_FILTER)
+        audiobook_filter = bot.browser.find(locators.AUDIOBOOK_FILTER)
         if not audiobook_filter.is_selected():
             audiobook_link = bot.browser.require_clickable(
-                self.selectors.audiobook_link
+                locators.AUDIOBOOK_LINK
             )
             bot.browser.safe_click(audiobook_link)
 
@@ -190,7 +186,7 @@ class AudibleRoutine(ScrapeBotRoutine):
 
             books = bot.parser.parse_records(
                 html,
-                self.selectors.books,
+                BS4_BOOK,
                 context={
                     "category": category_name,
                     "subcategory": subcategory_name,
@@ -225,14 +221,14 @@ class AudibleRoutine(ScrapeBotRoutine):
 
     def _get_pages(self, bot: ScrapeBot) -> int:
         try:
-            bot.browser.require_presence(self.selectors.page_numbers)
+            bot.browser.require_presence(locators.PAGE_NUMBERS)
         except TimeoutException as exc:
             bot.logger.warning(
                 "  Could not determine page count: %s. Scraping one page.", exc
             )
             return 1
 
-        page_elements = bot.browser.find_all(self.selectors.page_numbers)
+        page_elements = bot.browser.find_all(locators.PAGE_NUMBERS)
         page_numbers = [
             element.text for element in page_elements if element.text.strip().isdigit()
         ]
@@ -245,18 +241,19 @@ class AudibleRoutine(ScrapeBotRoutine):
 
     def _get_page_html(self, bot: ScrapeBot) -> str | None:
         html = bot.browser.html()
-        if "adbl-impression-container" not in html:
+        if routine_settings.PAGE_LOAD_SENTINEL not in html:
             bot.logger.debug("    Main content missing; waiting and retrying.")
             bot.timing.sleep(routine_settings.PAGE_RETRY_DELAY)
             bot.browser.refresh()
             html = bot.browser.html()
 
-        if "adbl-impression-container" not in html:
+        if routine_settings.PAGE_LOAD_SENTINEL not in html:
             return None
+
         return html
 
     def _go_to_next_page(self, bot: ScrapeBot) -> bool:
-        next_button = bot.browser.locate(self.selectors.next_button)
+        next_button = bot.browser.locate(locators.NEXT_BUTTON)
         if next_button is None:
             return False
         bot.browser.safe_click(next_button)
