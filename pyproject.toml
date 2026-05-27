@@ -1,14 +1,25 @@
-[project]
-name = "apacheaudible-3-11"
-version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.11"
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
 
+[project]
+name = "yetl"
+version = "0.1.0"
+authors = [
+    { name = "Stan Nguyen (Totori Yoyori)", email = "stan.mng@gmail.com" }
+]
+description = "Micro-framework for building ETL pipelines, optimized for performance and developer speed."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
 dependencies = [
     # ===== Web scraping dependencies
     "beautifulsoup4==4.14.3",
     "selenium==4.41.0",
+    # ===== Async Framework
+    "asyncer>=0.0.17",
+    "httpx>=0.28.1",
     # ===== Data analysis dependencies
     "matplotlib==3.10.8",
     "missingno==0.5.2",
@@ -16,8 +27,7 @@ dependencies = [
     "pandas==3.0.1",
     "seaborn==0.13.2",
     "thefuzz==0.22.1",
-    # ===== Workflow orchestration dependencies
-    "prefect==3.6.23",
+    "pyarrow>=24.0.0",
     # ===== Settings and validation dependencies
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.1",
@@ -25,8 +35,11 @@ dependencies = [
     # ===== Database and loading dependencies
     "snowflake-connector-python==4.4.0",
     "sqlalchemy==2.0.48",
-    "asyncer>=0.0.17",
-    "pyarrow>=24.0.0",
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+  "License :: OSI Approved :: MIT License",
 ]
 
 [dependency-groups]
@@ -34,7 +47,15 @@ dev = [
     "black==26.3.1",
     "ipykernel>=7.2.0",
     "pytest==9.0.2",
+    "prefect==3.6.23",
 ]
 
+[project.urls]
+Homepage = "https://github.com/TotoriYoyori/scrape-bot"
+Issues = "https://github.com/TotoriYoyori/scrape-bot/issues"
+
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = ["src", "."]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/yetl"]

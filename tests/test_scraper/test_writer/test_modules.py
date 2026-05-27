@@ -2,7 +2,7 @@ import csv
 
 from pydantic import BaseModel
 
-from src.scraper.writer import CsvWriterConfig, CsvWriterModule
+from yetl.scraper.writer import CsvWriterConfig, CsvWriterModule
 
 
 class ExampleRecord(BaseModel):
