@@ -6,7 +6,7 @@ import pandas as pd
 from prefect import flow, get_run_logger, task
 
 from recipes import audible_clean_steps
-from src.extract import extract_audible_csv
+from src.extract import extract_csv
 from src.load import upload_to_snowflake_stage
 from src.main import scrape_site
 from src.notification import email_notify, is_workday
@@ -30,7 +30,7 @@ def file_exists(file_path: str) -> bool:
 
 @task
 def read_recently_export_csv(dirty_file_path: str) -> pd.DataFrame:
-    return extract_audible_csv(dirty_file_path)
+    return extract_csv(dirty_file_path)
 
 
 @task

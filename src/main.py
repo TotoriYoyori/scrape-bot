@@ -1,4 +1,6 @@
-from src.scraper import AudibleRoutine, ScrapeBot
+from src.scraper import ScrapeBot
+from src.scraper.routines.audible import AudibleRoutine
+from src.scraper.routines.jason_thoughtleader import JasonThoughtleaderRoutine
 
 # =============== ASSEMBLE SCRAPING ROBOT ===============
 bot = ScrapeBot(
@@ -6,10 +8,7 @@ bot = ScrapeBot(
     description="Scrapes the Audible home page to collect book information.",
 )
 
-routine = AudibleRoutine(
-    target_category="Money & Finance",
-    max_records=20,
-)
+routine = AudibleRoutine(target_category="Money & Finance")
 
 bot.install_routine(routine)
 

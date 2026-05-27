@@ -1,7 +1,7 @@
 import pytest
 from pydantic import BaseModel
 
-from src.scraper.routines.schema import BookRecord
+from src.scraper.routines.audible.schema import BookRecord
 from src.scraper.bs4 import (
     BS4RecordSchema,
     BS4Locator,

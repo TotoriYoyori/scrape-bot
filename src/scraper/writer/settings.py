@@ -11,11 +11,11 @@ from src.scraper.primitives import ScrapeBotModuleSetting
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
-class WriterSettings(ScrapeBotModuleSetting):
-    location: Path = Field(default_factory=lambda: PROJECT_ROOT / "output")
-    output_path: Path = Field(default=None, validate_default=True)
+class CsvWriterConfig(ScrapeBotModuleSetting):
+    LOCATION: Path = Field(default_factory=lambda: PROJECT_ROOT / "output")
+    OUTPUT_PATH: Path = Field(default=None, validate_default=True)
 
-    @field_validator("output_path", mode="before")
+    @field_validator("OUTPUT_PATH", mode="before")
     @classmethod
     def generate_output_path(
         cls, value: Path | str | None, info: ValidationInfo
@@ -23,7 +23,7 @@ class WriterSettings(ScrapeBotModuleSetting):
         if value is not None:
             return Path(value)
 
-        location = Path(info.data.get("location", PROJECT_ROOT / "output"))
+        location = Path(info.data.get("LOCATION", PROJECT_ROOT / "output"))
         today = dt.date.today().strftime("%Y%m%d")
 
         return location / f"export_audible_dirty_{today}.csv"
@@ -32,6 +32,3 @@ class WriterSettings(ScrapeBotModuleSetting):
         env_prefix="WRITER_",
         extra="ignore",
     )
-
-
-writer_settings = WriterSettings()

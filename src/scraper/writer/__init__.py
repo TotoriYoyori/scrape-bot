@@ -1,3 +1,4 @@
-from src.scraper.writer.modules import CsvWriterModule, create_csv_writer
+from src.scraper.writer.modules import CsvWriterModule
+from src.scraper.writer.settings import CsvWriterConfig
 
-__all__ = ["CsvWriterModule", "create_csv_writer"]
+__all__ = ["CsvWriterConfig", "CsvWriterModule"]

@@ -1,3 +1,12 @@
-from src.extract.extract import extract_audible_csv
+from src.extract.extract import (
+    extract_csv,
+    extract_socrata_csv,
+    extract_socrata_csv_lite
+)
 
-__all__ = ["extract_audible_csv"]
+__all__ = [
+    # ===== Public API Functions
+    "extract_csv",
+    "extract_socrata_csv",
+    "extract_socrata_csv_lite",
+]

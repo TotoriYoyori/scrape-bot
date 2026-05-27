@@ -1,12 +1,13 @@
-from __future__ import annotations
-
 import re
 import unicodedata
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeVar
 
 from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# =============== GENERIC SCRAPEBOT TYPING TO AVOID CIRCULAR IMPORTS ===============
+ScrapeBot = TypeVar("ScrapeBot")
 
 
 # =============== BASE CLASS FOR SCRAPE BOT MODULE SETTINGS ===============
@@ -42,8 +43,28 @@ class ScrapeBotModule:
 class ScrapeBotRoutine(Protocol):
     """Protocol for scrape routines executed by a ScrapeBot."""
 
-    def execute(self, bot) -> None:
-        """Run the routine with the provided ScrapeBot."""
+    name: str
+    description: str
+
+    def execute(self, bot: ScrapeBot):
+        """Full orchestration entry point. Binds bot, runs lifecycle, releases bot."""
+        ...
+
+    def setup(self):
+        """Site-level preparation: navigation, cookies, redirects."""
+        ...
+
+    def reset_state(self):
+        """Reset routine state before a run."""
+        ...
+
+    def scrape_page(self):
+        """Extract records from the current page. Returns empty list if page fails."""
+        ...
+
+    def write(self):
+        """Persist extracted records to output."""
+        ...
 
 
 class ScrapeBotRoutineRecord(BaseModel):

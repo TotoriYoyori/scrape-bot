@@ -5,7 +5,7 @@ from src.scraper.logger import LoggerModule
 from src.scraper.primitives import ScrapeBotRoutine
 from src.scraper.selenium import SeleniumModule
 from src.scraper.timing import TimingModule
-from src.scraper.writer import CsvWriterModule, create_csv_writer
+from src.scraper.writer import CsvWriterModule
 
 
 class ScrapeBot:
@@ -35,7 +35,7 @@ class ScrapeBot:
         self.logger: LoggerModule = logger or LoggerModule()
         self.browser: SeleniumModule = browser or SeleniumModule()
         self.parser: BeautifulSoupModule = parser or BeautifulSoupModule()
-        self.writer: CsvWriterModule = writer or create_csv_writer()
+        self.writer: CsvWriterModule = writer or CsvWriterModule()
         self.timing: TimingModule = timing or TimingModule()
 
         # ===== Routine Installation

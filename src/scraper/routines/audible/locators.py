@@ -2,7 +2,6 @@ from selenium.webdriver.common.by import By
 
 from src.scraper.selenium import SeleniumLocator
 
-
 # =============== AUDIBLE SELENIUM LOCATORS ===============
 COOKIE_ACCEPT_BUTTON = SeleniumLocator(
     by_method=By.CSS_SELECTOR,
@@ -13,12 +12,12 @@ REDIRECT_LINK = SeleniumLocator(
     locator_name="#notification-banner-message .bc-link",
 )
 CATEGORIES = SeleniumLocator(
-    by_method=By.CLASS_NAME,
-    locator_name="refinementFormLink",
+    by_method=By.CSS_SELECTOR,
+    locator_name=".categories .bc-link",
 )
-SUBCATEGORY_CONTAINER = SeleniumLocator(
-    by_method=By.CLASS_NAME,
-    locator_name="bc-spacing-medium",
+SUBCATEGORY = SeleniumLocator(
+    by_method=By.CSS_SELECTOR,
+    locator_name=".categories .bc-box .bc-spacing-mini",
 )
 BREADCRUMB = SeleniumLocator(
     by_method=By.CLASS_NAME,

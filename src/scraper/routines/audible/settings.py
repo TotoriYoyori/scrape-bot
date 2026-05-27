@@ -5,20 +5,6 @@ from src.scraper.primitives import ScrapeBotModuleSetting
 
 
 class AudibleRoutineSettings(ScrapeBotModuleSetting):
-    CSV_FIELDNAMES: list[str] = Field(
-        default_factory=lambda: [
-            "name",
-            "author",
-            "narrator",
-            "runtime",
-            "release_date",
-            "language",
-            "stars",
-            "price",
-            "category",
-            "subcategory",
-        ]
-    )
     SKIP_MAP: dict[str, list[int]] = Field(
         default_factory=lambda: {
             "Biographies & Memoirs": [2, 5],
@@ -36,6 +22,3 @@ class AudibleRoutineSettings(ScrapeBotModuleSetting):
         env_prefix="AUDIBLE_ROUTINE_",
         extra="ignore",
     )
-
-
-routine_settings = AudibleRoutineSettings()

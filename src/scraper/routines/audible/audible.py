@@ -1,12 +1,18 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 
-from src.scraper.bot import ScrapeBot
 from src.scraper.primitives import ScrapeBotRoutine
 
-from src.scraper.routines import locators
-from src.scraper.routines.schema import BS4_BOOK, BookRecord
-from src.scraper.routines.settings import routine_settings
+from . import locators
+from .schema import BS4_BOOK, BookRecord
+from .settings import AudibleRoutineSettings
+
+if TYPE_CHECKING:
+    from src.scraper.bot import ScrapeBot
 
 
 class AudibleRoutine(ScrapeBotRoutine):
@@ -21,12 +27,16 @@ class AudibleRoutine(ScrapeBotRoutine):
         *,
         target_category: str | None = None,
         max_records: int | None = None,
+        settings: AudibleRoutineSettings | None = None,
     ) -> None:
         self.target_category = target_category
         self.max_records = max_records
+        self.settings = settings or AudibleRoutineSettings()
         self.records_written = 0
 
     def execute(self, bot: ScrapeBot) -> None:
+        self.records_written = 0
+
         bot.browser.open(self.BASE_URL)
         self._follow_redirect_if_present(bot)
         self._accept_cookie_banner_if_present(bot)
@@ -96,34 +106,28 @@ class AudibleRoutine(ScrapeBotRoutine):
         )
 
     def _get_categories(self, bot: ScrapeBot):
-        bot.browser.require_presence(locators.CATEGORIES)
-        categories = bot.browser.find_all(locators.CATEGORIES)
+        categories = bot.browser.locate_all(locators.CATEGORIES)
 
         return categories[:-2]
 
     def _get_subcategories(self, bot: ScrapeBot):
-        bot.browser.require_presence(locators.SUBCATEGORY_CONTAINER)
-        container = bot.browser.find(locators.SUBCATEGORY_CONTAINER)
-        return container.find_elements(By.CLASS_NAME, "refinementFormLink")
+        return bot.browser.locate_all(locators.SUBCATEGORY)
 
     def _go_back_to_subcategories(self, bot: ScrapeBot) -> None:
-        bot.browser.require_presence(locators.BREADCRUMB)
-        breadcrumb = bot.browser.find(locators.BREADCRUMB)
-        items = breadcrumb.find_elements(By.TAG_NAME, "li")
-        if len(items) > 1:
-            bot.browser.safe_click(items[1])
+        breadcrumb = bot.browser.locate(locators.BREADCRUMB)
+        if breadcrumb is not None:
+            items = breadcrumb.find_elements(By.TAG_NAME, "li")
+            if len(items) > 1:
+                bot.browser.safe_click(items[1])
 
     def _go_back_to_all_categories(self, bot: ScrapeBot) -> None:
         all_categories = bot.browser.require_clickable(locators.ALL_CATEGORIES)
         bot.browser.safe_click(all_categories)
 
     def _apply_options(self, bot: ScrapeBot) -> None:
-        bot.browser.require_presence(locators.AUDIOBOOK_FILTER)
-        audiobook_filter = bot.browser.find(locators.AUDIOBOOK_FILTER)
-        if not audiobook_filter.is_selected():
-            audiobook_link = bot.browser.require_clickable(
-                locators.AUDIOBOOK_LINK
-            )
+        audiobook_filter = bot.browser.locate(locators.AUDIOBOOK_FILTER)
+        if audiobook_filter is not None and not audiobook_filter.is_selected():
+            audiobook_link = bot.browser.require_clickable(locators.AUDIOBOOK_LINK)
             bot.browser.safe_click(audiobook_link)
 
     def _scrape_subcategories(self, bot: ScrapeBot, category_name: str) -> bool:
@@ -195,9 +199,7 @@ class AudibleRoutine(ScrapeBotRoutine):
 
             records_to_write = self._limit_records(books)
             if records_to_write:
-                bot.writer.write(
-                    records_to_write, fieldnames=routine_settings.CSV_FIELDNAMES
-                )
+                bot.writer.write(records_to_write)
                 self.records_written += len(records_to_write)
                 bot.logger.info(
                     "    Written %d / %s books so far.",
@@ -220,15 +222,7 @@ class AudibleRoutine(ScrapeBotRoutine):
         return True
 
     def _get_pages(self, bot: ScrapeBot) -> int:
-        try:
-            bot.browser.require_presence(locators.PAGE_NUMBERS)
-        except TimeoutException as exc:
-            bot.logger.warning(
-                "  Could not determine page count: %s. Scraping one page.", exc
-            )
-            return 1
-
-        page_elements = bot.browser.find_all(locators.PAGE_NUMBERS)
+        page_elements = bot.browser.locate_all(locators.PAGE_NUMBERS)
         page_numbers = [
             element.text for element in page_elements if element.text.strip().isdigit()
         ]
@@ -241,13 +235,13 @@ class AudibleRoutine(ScrapeBotRoutine):
 
     def _get_page_html(self, bot: ScrapeBot) -> str | None:
         html = bot.browser.html()
-        if routine_settings.PAGE_LOAD_SENTINEL not in html:
+        if self.settings.PAGE_LOAD_SENTINEL not in html:
             bot.logger.debug("    Main content missing; waiting and retrying.")
-            bot.timing.sleep(routine_settings.PAGE_RETRY_DELAY)
+            bot.timing.sleep(self.settings.PAGE_RETRY_DELAY)
             bot.browser.refresh()
             html = bot.browser.html()
 
-        if routine_settings.PAGE_LOAD_SENTINEL not in html:
+        if self.settings.PAGE_LOAD_SENTINEL not in html:
             return None
 
         return html
@@ -260,9 +254,8 @@ class AudibleRoutine(ScrapeBotRoutine):
         bot.timing.sleep(1)
         return True
 
-    @staticmethod
-    def _should_scrape(category_name: str, index: int) -> bool:
-        return index not in routine_settings.SKIP_MAP.get(category_name, [])
+    def _should_scrape(self, category_name: str, index: int) -> bool:
+        return index not in self.settings.SKIP_MAP.get(category_name, [])
 
     def _limit_records(self, records: list[BookRecord]) -> list[BookRecord]:
         if self.max_records is None:

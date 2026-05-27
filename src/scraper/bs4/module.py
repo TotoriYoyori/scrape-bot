@@ -2,7 +2,7 @@ import re
 from typing import Any
 
 from bs4 import BeautifulSoup
-from bs4.element import PageElement, Tag
+from bs4.element import Tag
 
 from src.scraper.primitives import ScrapeBotModule
 from src.scraper.bs4.primitives import (
@@ -48,7 +48,7 @@ class BeautifulSoupModule(ScrapeBotModule):
 
         return None
 
-    # ===== Generic record parsing helpers
+    # ===== Work with BS4RecordSchema
     def parse_records(
         self,
         html: str,
@@ -64,6 +64,7 @@ class BeautifulSoupModule(ScrapeBotModule):
             for field_name in schema.skip_if_missing:
                 if field_name in values:
                     continue
+
                 field = schema.fields.get(field_name)
                 if field is not None:
                     values[field_name] = self.extract_field(container, field)
@@ -74,43 +75,36 @@ class BeautifulSoupModule(ScrapeBotModule):
             for field_name, field in schema.fields.items():
                 if field_name in values:
                     continue
+
                 values[field_name] = self.extract_field(container, field)
 
             records.append(schema.model(**values))
 
         return records
 
-    def extract_field(
-        self,
-        scope: Tag,
-        field: BS4TextField,
-    ) -> str | None:
+    def extract_field(self, scope: Tag, field: BS4TextField) -> str | None:
         element = self._select_one(scope, field.locator)
-        if element is None:
+        if element is None or not hasattr(element, "get_text"):
             return field.default
-
-        text = self._extract_text(element)
-        if text is None:
-            return field.default
-        if field.regex_pattern:
-            matches = re.findall(field.regex_pattern, text)
-            return matches[0] if matches else field.default
-        if field.trim_prefix and text is not None:
-            text = text.replace(field.trim_prefix, "").strip()
-        if field.trim_suffix and text is not None:
-            text = text.removesuffix(field.trim_suffix).strip()
-
-        return text or field.default
-
-    def _extract_text(self, element: PageElement) -> str | None:
-        if not hasattr(element, "get_text"):
-            return None
 
         text = element.get_text(
             self.config.TEXT_SEPARATOR,
             strip=self.config.STRIP_TEXT,
         )
-        return text or None
+        if not text:
+            return field.default
+
+        match field:
+            case BS4TextField(regex_pattern=pattern) if pattern:
+                matches = re.findall(pattern, text)
+                return matches[0] if matches else field.default
+            case BS4TextField(trim_prefix=prefix, trim_suffix=suffix):
+                if prefix:
+                    text = text.removeprefix(prefix).strip()
+                if suffix:
+                    text = text.removesuffix(suffix).strip()
+
+        return text or field.default
 
     @staticmethod
     def _missing_skip_field(

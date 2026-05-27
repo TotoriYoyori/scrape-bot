@@ -107,9 +107,7 @@ class SeleniumModule(ScrapeBotModule):
     # ===== More resilient Selenium's search and return wrapper
     def locate(self, locator: SeleniumLocator) -> WebElement | None:
         try:
-            return self.wait.until(
-                EC.visibility_of_element_located(locator.as_tuple())
-            )
+            return self.wait.until(EC.visibility_of_element_located(locator.as_tuple()))
         except TimeoutException:
             return None
 
@@ -122,13 +120,21 @@ class SeleniumModule(ScrapeBotModule):
             return []
 
     def require_presence(self, locator: SeleniumLocator) -> WebElement:
-        return self.wait.until(
-            EC.presence_of_element_located(locator.as_tuple())
-        )
+        return self.wait.until(EC.presence_of_element_located(locator.as_tuple()))
 
     def require_clickable(self, locator: SeleniumLocator) -> WebElement:
+        return self.wait.until(EC.element_to_be_clickable(locator.as_tuple()))
+
+    def require_interactable(self, locator: SeleniumLocator) -> WebElement:
         return self.wait.until(
-            EC.element_to_be_clickable(locator.as_tuple())
+            lambda driver: next(
+                (
+                    element
+                    for element in driver.find_elements(*locator.as_tuple())
+                    if element.is_displayed() and element.is_enabled()
+                ),
+                False,
+            )
         )
 
     # ===== Resilient Selenium clicking methods
