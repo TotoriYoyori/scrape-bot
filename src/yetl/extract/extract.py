@@ -93,6 +93,7 @@ def extract_csv(file_path: str) -> pd.DataFrame:
 async def extract_socrata_csv(
     *,
     data_source_url: str,
+    offset: int = 0,
     seed_limit: int = 100_000,
     chunk_limit: int = 1_000,
     concurrent_batch_limit: int = 25,
@@ -104,6 +105,7 @@ async def extract_socrata_csv(
 
     Args:
         data_source_url: The url to extract data from.
+        offset: The number of records to skip.
         seed_limit: The total number of records to pull.
         chunk_limit: The total number of records PER API call.
         concurrent_batch_limit:
@@ -119,12 +121,13 @@ async def extract_socrata_csv(
     """
     config = ExtractCSVSettings(
         data_source_url=data_source_url,
+        offset=offset,
         seed_limit=seed_limit,
         chunk_limit=chunk_limit,
         concurrent_batch_limit=concurrent_batch_limit,
         sleep_dur=sleep_dur,
     )
-    offset_checkpoints = range(0, config.seed_limit, config.chunk_limit)
+    offset_checkpoints = range(offset, offset + config.seed_limit, config.chunk_limit)
 
     all_results = []
     async with AsyncClient() as client:

@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator, ValidationInfo
 # =============== VALIDATION CONFIG OBJECT FOR EXTRACT ===============
 class ExtractCSVSettings(BaseModel):
     data_source_url: str
+    offset: int
     seed_limit: Annotated[int, Field(gt=0)]
     chunk_limit: Annotated[int, Field(gt=0, le=1_000, validate_default=True)]
     concurrent_batch_limit: Annotated[int, Field(gt=0, le=50)]
