@@ -14,6 +14,3 @@ class NotificationSettings(BaseSettings):
         env_prefix="NOTIFICATION_",
         extra="ignore",
     )
-
-
-notification_settings = NotificationSettings()

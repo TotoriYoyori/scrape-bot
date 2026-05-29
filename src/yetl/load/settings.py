@@ -11,6 +11,3 @@ class SnowflakeSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parents[2] / ".env",
     )
-
-
-snowflake_settings = SnowflakeSettings()

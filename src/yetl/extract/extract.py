@@ -73,10 +73,21 @@ async def _fetch_socrata_api(
 
 # =============== PUBLIC API FUNCTIONS ===============
 def extract_csv(file_path: str) -> pd.DataFrame:
-    if os.path.exists(file_path):
+    """Load a CSV file from disk into a DataFrame.
+
+    Args:
+        file_path: Path to the CSV file.
+
+    Raises:
+        FileNotFoundError: If no file exists at the given path.
+
+    Returns:
+        A pandas DataFrame.
+    """
+    try:
         return pd.read_csv(file_path)
-    else:
-        raise FileNotFoundError
+    except FileNotFoundError:
+        raise FileNotFoundError(f"No file found at path: {file_path}")
 
 
 async def extract_socrata_csv(

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling >= 1.26"]
+requires = ["hatchling>=1.26"]
 build-backend = "hatchling.build"
 
 [project]
@@ -13,41 +13,51 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICEN[CS]E*"]
-dependencies = [
-    # ===== Web scraping dependencies
-    "beautifulsoup4==4.14.3",
-    "selenium==4.41.0",
-    # ===== Async Framework
-    "asyncer>=0.0.17",
-    "httpx>=0.28.1",
-    # ===== Data analysis dependencies
-    "matplotlib==3.10.8",
-    "missingno==0.5.2",
-    "numpy>=2.4.6",
-    "pandas==3.0.1",
-    "seaborn==0.13.2",
-    "thefuzz==0.22.1",
-    "pyarrow>=24.0.0",
-    # ===== Settings and validation dependencies
-    "pydantic>=2.13.4",
-    "pydantic-settings>=2.14.1",
-    "python-dotenv>=1.2.2",
-    # ===== Database and loading dependencies
-    "snowflake-connector-python==4.4.0",
-    "sqlalchemy==2.0.48",
-]
 classifiers = [
-  "Programming Language :: Python :: 3",
-  "Operating System :: OS Independent",
-  "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Intended Audience :: Developers",
+]
+dependencies = [
+    "httpx>=0.27",
+    "asyncer>=0.0.7",
+    "pandas>=2.0",
+    "pydantic>=2.0",
+    "pyarrow>=14.0",
+    "numpy>=1.26",
 ]
 
-[dependency-groups]
+[project.optional-dependencies]
+scraper = [
+    "beautifulsoup4>=4.12",
+    "selenium>=4.0",
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.0",
+]
+load = [
+    "snowflake-connector-python>=3.0",
+    "sqlalchemy>=2.0",
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.0",
+]
+viz = [
+    "matplotlib>=3.7",
+    "seaborn>=0.13",
+    "missingno>=0.5",
+    "thefuzz>=0.22",
+]
+all = [
+    "yetl[scraper,load,viz]",
+]
 dev = [
-    "black==26.3.1",
-    "ipykernel>=7.2.0",
-    "pytest==9.0.2",
-    "prefect==3.6.23",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "black>=24.0",
+    "ipykernel>=6.0",
+    "prefect>=3.0",
 ]
 
 [project.urls]
